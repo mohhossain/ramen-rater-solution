@@ -1,13 +1,26 @@
 // write your code here
-
 let ramenMenuDiv = document.getElementById("ramen-menu");
 let form = document.getElementById("new-ramen");
+let editRamenForm = document.getElementById("edit-ramen");
+let displayComment = document.querySelector("#comment-display");
+let displayRating = document.querySelector("#rating-display");
+let deleteButton = document.querySelector("#delete");
+
+let ramenList = [];
 
 fetch("http://localhost:4000/ramens")
   .then((response) => response.json())
-  .then((ramens) => renderRamens(ramens));
+  .then((ramens) => {
+    ramenList = ramens;
+    renderRamens(ramens);
+    renderRamenDetails(ramens[0]);
+  });
 
+// renderRamens()
+
+// function fetchRamens
 function renderRamens(ramens) {
+  ramenMenuDiv.innerHTML = "";
   for (let ramen of ramens) {
     console.log(ramen);
 
@@ -18,7 +31,6 @@ function renderRamens(ramens) {
     ramenMenuDiv.append(ramenImage);
 
     ramenImage.addEventListener("click", function () {
-      //   console.log("Image is clicked");
       let displayRamenImage = document.querySelector(".detail-image");
       displayRamenImage.src = ramen.image;
 
@@ -28,12 +40,48 @@ function renderRamens(ramens) {
       let displayRestaurant = document.querySelector(".restaurant");
       displayRestaurant.textContent = ramen.restaurant;
 
-      document.querySelector("#rating-display").textContent = ramen.rating;
+      displayRating.textContent = ramen.rating;
 
-      let displayComment = document.querySelector("#comment-display");
       displayComment.textContent = ramen.comment;
+
+      deleteButton.addEventListener("click", function () {
+        let newRamenList = ramenList.filter(
+          (keepRamen) => keepRamen.id !== ramen.id
+        );
+
+        ramenList = newRamenList;
+
+        renderRamens(newRamenList);
+
+        console.log(newRamenList);
+      });
     });
   }
+}
+
+// DRY -> DO NOT REPEAT YOURSELF!!!!!!
+function renderRamenDetails(ramen) {
+  console.log("clicking image");
+  let displayRamenImage = document.querySelector(".detail-image");
+  displayRamenImage.src = ramen.image;
+
+  let displayName = document.querySelector(".name");
+  displayName.textContent = ramen.name;
+
+  let displayRestaurant = document.querySelector(".restaurant");
+  displayRestaurant.textContent = ramen.restaurant;
+
+  displayRating.textContent = ramen.rating;
+
+  displayComment.textContent = ramen.comment;
+
+  deleteButton.addEventListener("click", function () {
+    let newRamenList = ramenList.filter(
+      (keepRamen) => keepRamen.id !== ramen.id
+    );
+
+    console.log(newRamenList);
+  });
 }
 
 form.addEventListener("submit", function (e) {
@@ -55,4 +103,10 @@ form.addEventListener("submit", function (e) {
   //   console.log([newRamen]);
 
   renderRamens([newRamen]); //we are making this an array because objects are not iterable
+});
+
+editRamenForm.addEventListener("submit", function (e) {
+  e.preventDefault();
+  displayComment.textContent = e.target["new-comment"].value;
+  displayRating.textContent = e.target.rating.value;
 });
