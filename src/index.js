@@ -1,4 +1,5 @@
 // write your code here
+let URL = "http://localhost:4000/ramens/";
 let ramenMenuDiv = document.getElementById("ramen-menu");
 let form = document.getElementById("new-ramen");
 let editRamenForm = document.getElementById("edit-ramen");
@@ -7,6 +8,9 @@ let displayRating = document.querySelector("#rating-display");
 let deleteButton = document.querySelector("#delete");
 
 let ramenList = [];
+
+let selectedRamen = {};
+let selectedIndex = 0;
 
 fetch("http://localhost:4000/ramens")
   .then((response) => response.json())
@@ -21,8 +25,8 @@ fetch("http://localhost:4000/ramens")
 // function fetchRamens
 function renderRamens(ramens) {
   ramenMenuDiv.innerHTML = "";
-  for (let ramen of ramens) {
-    console.log(ramen);
+  ramens.forEach((ramen, index) => {
+    console.log(ramen, index);
 
     let ramenImage = document.createElement("img");
     ramenImage.src = ramen.image;
@@ -31,32 +35,27 @@ function renderRamens(ramens) {
     ramenMenuDiv.append(ramenImage);
 
     ramenImage.addEventListener("click", function () {
-      let displayRamenImage = document.querySelector(".detail-image");
-      displayRamenImage.src = ramen.image;
-
-      let displayName = document.querySelector(".name");
-      displayName.textContent = ramen.name;
-
-      let displayRestaurant = document.querySelector(".restaurant");
-      displayRestaurant.textContent = ramen.restaurant;
-
-      displayRating.textContent = ramen.rating;
-
-      displayComment.textContent = ramen.comment;
+      selectedRamen = ramen;
+      selectedIndex = index;
+      renderRamenDetails(ramen);
 
       deleteButton.addEventListener("click", function () {
-        let newRamenList = ramenList.filter(
-          (keepRamen) => keepRamen.id !== ramen.id
-        );
+        fetch(URL + ramen.id, { method: "DELETE" })
+          .then((res) => res.json())
+          .then((data) => {
+            let newRamenList = ramenList.filter(
+              (keepRamen) => keepRamen.id !== ramen.id
+            );
 
-        ramenList = newRamenList;
+            ramenList = newRamenList;
 
-        renderRamens(newRamenList);
+            renderRamens(newRamenList);
 
-        console.log(newRamenList);
+            console.log(newRamenList);
+          });
       });
     });
-  }
+  });
 }
 
 // DRY -> DO NOT REPEAT YOURSELF!!!!!!
@@ -74,14 +73,6 @@ function renderRamenDetails(ramen) {
   displayRating.textContent = ramen.rating;
 
   displayComment.textContent = ramen.comment;
-
-  deleteButton.addEventListener("click", function () {
-    let newRamenList = ramenList.filter(
-      (keepRamen) => keepRamen.id !== ramen.id
-    );
-
-    console.log(newRamenList);
-  });
 }
 
 form.addEventListener("submit", function (e) {
@@ -100,13 +91,55 @@ form.addEventListener("submit", function (e) {
     rating: e.target.rating.value,
     comment: e.target["new-comment"].value,
   };
+
+  fetch(URL, {
+    method: "POST",
+    headers: {
+      "content-type": "Application/json",
+    },
+    body: JSON.stringify(newRamen),
+  })
+    .then((res) => {
+      return res.json();
+      // if (res.ok) {
+      //   res.json().then((data) => renderRamens([data]));
+      // } else {
+      //   console.log("Error");
+      // }
+    })
+    .then((data) => {
+      console.log(data);
+      ramenList.push(data);
+      renderRamens(ramenList);
+    })
+    .catch((err) => console.log(err));
   //   console.log([newRamen]);
 
-  renderRamens([newRamen]); //we are making this an array because objects are not iterable
+  // renderRamens([newRamen]); //we are making this an array because objects are not iterable
 });
 
 editRamenForm.addEventListener("submit", function (e) {
   e.preventDefault();
-  displayComment.textContent = e.target["new-comment"].value;
-  displayRating.textContent = e.target.rating.value;
+  fetch(`http://localhost:4000/ramens/${selectedRamen.id}`, {
+    method: "PATCH",
+    headers: {
+      "content-type": "Application/json",
+    },
+    body: JSON.stringify({
+      rating: e.target.rating.value,
+      comment: e.target["new-comment"].value,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      displayComment.textContent = data.comment;
+      displayRating.textContent = data.rating;
+      ramenList[selectedIndex] = data;
+      renderRamens(ramenList);
+    });
+  // .then(
+  //   fetch("http://localhost:4000/ramens/")
+  //     .then((res) => res.json())
+  //     .then((data) => renderRamens(data))
+  // );
 });
